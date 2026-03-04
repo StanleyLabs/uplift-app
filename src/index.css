@@ -56,6 +56,8 @@ body {
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
+  /* Enforce dark background */
+  background-color: var(--sumi-ink);
   /* Hide Scrollbar */
   scrollbar-width: none;
   /* Firefox */
@@ -96,10 +98,15 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  background-color: #000;
+  /* Fallback for transparent or loading images */
   background-size: cover;
   background-position: center;
   z-index: 1;
   /* Soft zoom animation for the background */
+}
+
+.quote-background.loaded {
   animation: slowZoom 20s infinite alternate linear;
 }
 
