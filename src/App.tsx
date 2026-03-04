@@ -23,9 +23,11 @@ const getRandomBackgroundUrl = () => {
 
 function App() {
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
-  const [allQuotes, setAllQuotes] = useState<Omit<QuoteData, 'backgroundUrl'>[]>(() => {
+  const [fetchedQuotes, setFetchedQuotes] = useState<Omit<QuoteData, 'backgroundUrl'>[]>([]);
+  const [localQuotesPool] = useState<Omit<QuoteData, 'backgroundUrl'>[]>(() => {
     return [...QUOTES].sort(() => 0.5 - Math.random());
   });
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
@@ -47,25 +49,26 @@ function App() {
         author: item.a
       }));
 
-      setAllQuotes(prev => [...prev, ...newQuotes]);
+      setFetchedQuotes(prev => [...prev, ...newQuotes]);
     } catch (err) {
       console.warn('Could not fetch external quotes.', err);
     } finally {
       setIsFetching(false);
+      setInitialFetchDone(true);
     }
   }, [isFetching]);
 
   const loadMoreQuotes = useCallback(() => {
     if (quotes.length === 0) return; // Wait for initial load
 
-    const filteredPool = selectedTheme === 'All'
-      ? allQuotes
-      : allQuotes.filter(q => q.theme === selectedTheme);
+    const pool = selectedTheme === 'All'
+      ? (fetchedQuotes.length > 0 ? fetchedQuotes : (initialFetchDone ? localQuotesPool : []))
+      : localQuotesPool.filter(q => q.theme === selectedTheme);
 
-    if (filteredPool.length === 0) return;
+    if (pool.length === 0) return;
 
     // Proactively fetch more if we're running low on unseen quotes (e.g. less than 10 left)
-    if (selectedTheme === 'All' && filteredPool.length - quoteIndex <= 10) {
+    if (selectedTheme === 'All' && pool.length - quoteIndex <= 10) {
       fetchZenQuotes();
     }
 
@@ -74,8 +77,8 @@ function App() {
       let newIndex = quoteIndex;
 
       // Pull strictly from the unseen portion of our quotes pool
-      if (filteredPool.length > quoteIndex) {
-        nextBatch = filteredPool.slice(quoteIndex, quoteIndex + 5);
+      if (pool.length > quoteIndex) {
+        nextBatch = pool.slice(quoteIndex, quoteIndex + 5);
         newIndex += nextBatch.length;
       }
 
@@ -83,7 +86,7 @@ function App() {
       if (nextBatch.length < 5) {
         const remainder = 5 - nextBatch.length;
         // Start recycling from index 0
-        const recycledBatch = filteredPool.slice(0, Math.min(remainder, filteredPool.length));
+        const recycledBatch = pool.slice(0, Math.min(remainder, pool.length));
         nextBatch = [...nextBatch, ...recycledBatch];
         newIndex = recycledBatch.length; // Wrap our index around to the start
       }
@@ -118,7 +121,7 @@ function App() {
 
       return [...prev, ...newQuotes];
     });
-  }, [allQuotes, quoteIndex, quotes.length, fetchZenQuotes, selectedTheme]);
+  }, [fetchedQuotes, initialFetchDone, localQuotesPool, quoteIndex, quotes.length, fetchZenQuotes, selectedTheme]);
 
   useEffect(() => {
     if (!isAutoMode) return;
@@ -148,14 +151,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Initialize the very first batch only once allQuotes has been populated/updated
-    if (quotes.length === 0 && allQuotes.length > 0) {
-      const filteredPool = selectedTheme === 'All'
-        ? allQuotes
-        : allQuotes.filter(q => q.theme === selectedTheme);
+    // Initialize the very first batch only once we have a pool to draw from
+    if (quotes.length === 0) {
+      const pool = selectedTheme === 'All'
+        ? (fetchedQuotes.length > 0 ? fetchedQuotes : (initialFetchDone ? localQuotesPool : []))
+        : localQuotesPool.filter(q => q.theme === selectedTheme);
 
-      if (filteredPool.length > 0) {
-        const initialBatch = filteredPool.slice(0, 5).map(q => {
+      if (pool.length > 0) {
+        const initialBatch = pool.slice(0, 5).map(q => {
           const bgUrl = getRandomBackgroundUrl();
 
           if (typeof window !== 'undefined') {
@@ -173,7 +176,7 @@ function App() {
         setQuoteIndex(5);
       }
     }
-  }, [allQuotes, quotes.length, selectedTheme]);
+  }, [fetchedQuotes, initialFetchDone, localQuotesPool, selectedTheme, quotes.length]);
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
