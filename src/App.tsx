@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { QuoteCard, type QuoteData } from './components/QuoteCard';
 import { ThemeFilter, THEMES } from './components/ThemeFilter';
+import { AutoModeToggle } from './components/AutoModeToggle';
 import { QUOTES } from './data/quotes';
 import { BACKGROUNDS } from './data/backgrounds';
 import './index.css';
@@ -13,6 +14,19 @@ function App() {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const [autoDuration, setAutoDuration] = useState(30);
+
+  useEffect(() => {
+    if (!isAutoMode) return;
+    const interval = setInterval(() => {
+      const container = document.querySelector('.app-container');
+      if (container) {
+        container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+      }
+    }, autoDuration * 1000); // Dynamic duration
+    return () => clearInterval(interval);
+  }, [isAutoMode, autoDuration]);
 
   const fetchZenQuotes = useCallback(async () => {
     if (isFetching) return;
@@ -156,6 +170,13 @@ function App() {
       <div
         ref={observerTarget}
         style={{ height: '10px', scrollSnapAlign: 'none' }}
+      />
+
+      <AutoModeToggle
+        isAutoMode={isAutoMode}
+        duration={autoDuration}
+        onToggle={() => setIsAutoMode(!isAutoMode)}
+        onSelectDuration={setAutoDuration}
       />
     </main>
   );
