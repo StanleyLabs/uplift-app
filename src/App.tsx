@@ -6,12 +6,19 @@ import { QUOTES } from './data/quotes';
 import { BACKGROUNDS } from './data/backgrounds';
 import './index.css';
 
+let shuffledBackgrounds: string[] = [];
+let backgroundIndex = 0;
+
 const getRandomBackgroundUrl = () => {
   // We've fetched a massive pool of perfectly curated, vertical, inspirational
   // nature photographs from Unsplash directly into our data structure.
   // This guarantees 100% uptime with NO red error placeholders, while maintaining
   // beautiful high resolution imagery.
-  return BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
+  if (shuffledBackgrounds.length === 0 || backgroundIndex >= shuffledBackgrounds.length) {
+    shuffledBackgrounds = [...BACKGROUNDS].sort(() => 0.5 - Math.random());
+    backgroundIndex = 0;
+  }
+  return shuffledBackgrounds[backgroundIndex++];
 };
 
 function App() {
