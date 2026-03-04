@@ -282,6 +282,38 @@ function App() {
     return () => clearInterval(interval);
   }, [state.isAutoMode, state.autoDuration]);
 
+  // Screen Wake Lock API
+  useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.warn('Could not acquire screen wake lock', err);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    requestWakeLock();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLock !== null) {
+        wakeLock.release().catch(console.error);
+        wakeLock = null;
+      }
+    };
+  }, []);
+
   return (
     <main
       className={`app-container ${state.isUiHidden ? 'ui-hidden' : ''}`}
