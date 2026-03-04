@@ -4,6 +4,7 @@ import { Play, Pause } from 'lucide-react';
 interface AutoModeToggleProps {
     isAutoMode: boolean;
     duration: number;
+    isScrolling?: boolean;
     onToggle: () => void;
     onSelectDuration: (duration: number) => void;
 }
@@ -11,6 +12,7 @@ interface AutoModeToggleProps {
 export const AutoModeToggle: React.FC<AutoModeToggleProps> = ({
     isAutoMode,
     duration,
+    isScrolling = false,
     onToggle,
     onSelectDuration
 }) => {
@@ -64,9 +66,11 @@ export const AutoModeToggle: React.FC<AutoModeToggleProps> = ({
                                 style={{
                                     strokeDasharray: circumference,
                                     strokeDashoffset: circumference,
-                                    animation: `progressTimer ${duration}s linear infinite`
+                                    animation: `progressTimer ${duration}s linear infinite`,
+                                    animationPlayState: isScrolling ? 'paused' : 'running',
+                                    opacity: isScrolling ? 0.3 : 1
                                 }}
-                                key={duration}
+                                key={`${duration}-${isScrolling}`}
                             />
                         )}
                     </svg>

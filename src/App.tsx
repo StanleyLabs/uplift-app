@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useRef, useCallback } from 'react';
+import { useReducer, useEffect, useRef, useCallback, useState } from 'react';
 import { EyeOff } from 'lucide-react';
 import { QuoteCard, type QuoteData } from './components/QuoteCard';
 import { ThemeFilter, THEMES } from './components/ThemeFilter';
@@ -190,6 +190,17 @@ function App() {
   const [state, dispatch] = useReducer(appReducer, undefined, initAppState);
   const observerTarget = useRef<HTMLDivElement>(null);
   const fetchFailures = useRef(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleScroll = useCallback(() => {
+    if (!state.isAutoMode) return;
+    setIsScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 300);
+  }, [state.isAutoMode]);
 
   const fetchZenQuotes = useCallback(async () => {
     if (state.isFetching || fetchFailures.current >= 3) return;
@@ -264,7 +275,7 @@ function App() {
 
   // Auto-mode logic
   useEffect(() => {
-    if (!state.isAutoMode) return;
+    if (!state.isAutoMode || isScrolling) return;
     const interval = setInterval(() => {
       const container = document.querySelector('.app-container');
       if (container) {
@@ -280,7 +291,7 @@ function App() {
       }
     }, state.autoDuration * 1000);
     return () => clearInterval(interval);
-  }, [state.isAutoMode, state.autoDuration]);
+  }, [state.isAutoMode, state.autoDuration, isScrolling]);
 
   // Screen Wake Lock API
   useEffect(() => {
@@ -322,6 +333,7 @@ function App() {
           dispatch({ type: 'SET_UI_HIDDEN', payload: false });
         }
       }}
+      onScroll={handleScroll}
     >
       <ThemeFilter
         selectedTheme={state.selectedTheme}
@@ -348,6 +360,7 @@ function App() {
       <AutoModeToggle
         isAutoMode={state.isAutoMode}
         duration={state.autoDuration}
+        isScrolling={isScrolling}
         onToggle={() => dispatch({ type: 'TOGGLE_AUTO_MODE' })}
         onSelectDuration={(duration) => dispatch({ type: 'SET_AUTO_DURATION', payload: duration })}
       />
