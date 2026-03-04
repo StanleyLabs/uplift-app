@@ -100,17 +100,23 @@ function App() {
     const interval = setInterval(() => {
       const container = document.querySelector('.app-container');
       if (container) {
+        let delayScroll = 0;
         // If we're at the very bottom (or close to it) and about to scroll down, trigger a load manually
         // because the intersection observer might be stuck or skipped
         if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
           loadMoreQuotes();
+          delayScroll = 150; // Give React 150ms to render the newly added quotes to the DOM
         }
 
-        container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+        setTimeout(() => {
+          container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+        }, delayScroll);
       }
     }, autoDuration * 1000); // Dynamic duration
     return () => clearInterval(interval);
-  }, [isAutoMode, autoDuration, loadMoreQuotes]); useEffect(() => {
+  }, [isAutoMode, autoDuration, loadMoreQuotes]);
+
+  useEffect(() => {
     // Initial fetch to load the first 50 external quotes right away
     fetchZenQuotes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
