@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useReducer, useEffect, useRef, useCallback } from 'react';
 import { QuoteCard, type QuoteData } from './components/QuoteCard';
 import { ThemeFilter, THEMES } from './components/ThemeFilter';
 import { AutoModeToggle } from './components/AutoModeToggle';
@@ -21,64 +21,113 @@ const getRandomBackgroundUrl = () => {
   return shuffledBackgrounds[backgroundIndex++];
 };
 
-function App() {
-  const [quotes, setQuotes] = useState<QuoteData[]>([]);
-  const [fetchedQuotes, setFetchedQuotes] = useState<Omit<QuoteData, 'backgroundUrl'>[]>([]);
-  const [localQuotesPool] = useState<Omit<QuoteData, 'backgroundUrl'>[]>(() => {
-    return [...QUOTES].sort(() => 0.5 - Math.random());
-  });
-  const [initialFetchDone, setInitialFetchDone] = useState(false);
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [isFetching, setIsFetching] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
-  const [isAutoMode, setIsAutoMode] = useState(false);
-  const [autoDuration, setAutoDuration] = useState(30);
+// --- STATE MACHINE / REDUCER ---
 
-  const fetchZenQuotes = useCallback(async () => {
-    if (isFetching) return;
-    setIsFetching(true);
-    try {
-      const res = await fetch('https://zenquotes.io/api/quotes/');
-      if (!res.ok) throw new Error('Failed to fetch API');
+type AppState = {
+  quotes: QuoteData[];
+  fetchedQuotes: Omit<QuoteData, 'backgroundUrl'>[];
+  localQuotesPool: Omit<QuoteData, 'backgroundUrl'>[];
+  initialFetchDone: boolean;
+  quoteIndex: number;
+  isFetching: boolean;
+  selectedTheme: string;
+  isAutoMode: boolean;
+  autoDuration: number;
+};
 
-      const data: { q: string, a: string }[] = await res.json();
+type AppAction =
+  | { type: 'FETCH_START' }
+  | { type: 'FETCH_SUCCESS'; payload: Omit<QuoteData, 'backgroundUrl'>[] }
+  | { type: 'FETCH_ERROR' }
+  | { type: 'SET_THEME'; payload: string }
+  | { type: 'TOGGLE_AUTO_MODE' }
+  | { type: 'SET_AUTO_DURATION'; payload: number }
+  | { type: 'INITIALIZE' }
+  | { type: 'LOAD_MORE' };
 
-      const newQuotes = data.map((item, index) => ({
-        id: `zen-${Date.now()}-${index}`,
-        text: item.q,
-        author: item.a
-      }));
+function initAppState(): AppState {
+  return {
+    quotes: [],
+    fetchedQuotes: [],
+    localQuotesPool: [...QUOTES].sort(() => 0.5 - Math.random()),
+    initialFetchDone: false,
+    quoteIndex: 0,
+    isFetching: false,
+    selectedTheme: THEMES[0],
+    isAutoMode: false,
+    autoDuration: 30,
+  };
+}
 
-      setFetchedQuotes(prev => [...prev, ...newQuotes]);
-    } catch (err) {
-      console.warn('Could not fetch external quotes.', err);
-    } finally {
-      setIsFetching(false);
-      setInitialFetchDone(true);
+function appReducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case 'FETCH_START':
+      return { ...state, isFetching: true };
+    case 'FETCH_SUCCESS':
+      return {
+        ...state,
+        isFetching: false,
+        initialFetchDone: true,
+        fetchedQuotes: [...state.fetchedQuotes, ...action.payload]
+      };
+    case 'FETCH_ERROR':
+      return { ...state, isFetching: false, initialFetchDone: true };
+    case 'SET_THEME':
+      return {
+        ...state,
+        selectedTheme: action.payload,
+        quotes: [],
+        quoteIndex: 0
+      };
+    case 'TOGGLE_AUTO_MODE':
+      return { ...state, isAutoMode: !state.isAutoMode };
+    case 'SET_AUTO_DURATION':
+      return { ...state, autoDuration: action.payload };
+
+    case 'INITIALIZE': {
+      if (state.quotes.length > 0) return state;
+
+      const pool = state.selectedTheme === 'All'
+        ? (state.fetchedQuotes.length > 0 ? state.fetchedQuotes : (state.initialFetchDone ? state.localQuotesPool : []))
+        : state.localQuotesPool.filter(q => q.theme === state.selectedTheme);
+
+      if (pool.length === 0) return state;
+
+      const initialBatch = pool.slice(0, 5).map(q => {
+        const bgUrl = getRandomBackgroundUrl();
+        if (typeof window !== 'undefined') {
+          const img = new window.Image();
+          img.src = bgUrl;
+        }
+        return {
+          ...q,
+          backgroundUrl: bgUrl,
+          id: crypto.randomUUID()
+        };
+      });
+
+      return {
+        ...state,
+        quotes: initialBatch,
+        quoteIndex: 5
+      };
     }
-  }, [isFetching]);
 
-  const loadMoreQuotes = useCallback(() => {
-    if (quotes.length === 0) return; // Wait for initial load
+    case 'LOAD_MORE': {
+      if (state.quotes.length === 0) return state; // Wait for initial load
 
-    const pool = selectedTheme === 'All'
-      ? (fetchedQuotes.length > 0 ? fetchedQuotes : (initialFetchDone ? localQuotesPool : []))
-      : localQuotesPool.filter(q => q.theme === selectedTheme);
+      const pool = state.selectedTheme === 'All'
+        ? (state.fetchedQuotes.length > 0 ? state.fetchedQuotes : (state.initialFetchDone ? state.localQuotesPool : []))
+        : state.localQuotesPool.filter(q => q.theme === state.selectedTheme);
 
-    if (pool.length === 0) return;
+      if (pool.length === 0) return state;
 
-    // Proactively fetch more if we're running low on unseen quotes (e.g. less than 10 left)
-    if (selectedTheme === 'All' && pool.length - quoteIndex <= 10) {
-      fetchZenQuotes();
-    }
-
-    setQuotes(prev => {
       let nextBatch: Omit<QuoteData, 'backgroundUrl'>[] = [];
-      let newIndex = quoteIndex;
+      let newIndex = state.quoteIndex;
 
       // Pull strictly from the unseen portion of our quotes pool
-      if (pool.length > quoteIndex) {
-        nextBatch = pool.slice(quoteIndex, quoteIndex + 5);
+      if (pool.length > state.quoteIndex) {
+        nextBatch = pool.slice(state.quoteIndex, state.quoteIndex + 5);
         newIndex += nextBatch.length;
       }
 
@@ -92,10 +141,10 @@ function App() {
       }
 
       // If somehow we STILL have nothing (e.g. allQuotes is completely empty), bail out
-      if (nextBatch.length === 0) return prev;
+      if (nextBatch.length === 0) return state;
 
       // Ensure the very first quote of this batch doesn't accidentally mathematically match the last quote we just looked at
-      if (prev.length > 0 && prev[prev.length - 1].text === nextBatch[0].text && nextBatch.length > 1) {
+      if (state.quotes.length > 0 && state.quotes[state.quotes.length - 1].text === nextBatch[0].text && nextBatch.length > 1) {
         const first = nextBatch.shift()!;
         nextBatch.push(first);
       }
@@ -116,82 +165,78 @@ function App() {
         };
       });
 
-      // Queue up the next index for the next scroll chunk
-      setQuoteIndex(newIndex);
+      return {
+        ...state,
+        quotes: [...state.quotes, ...newQuotes],
+        quoteIndex: newIndex
+      };
+    }
 
-      return [...prev, ...newQuotes];
-    });
-  }, [fetchedQuotes, initialFetchDone, localQuotesPool, quoteIndex, quotes.length, fetchZenQuotes, selectedTheme]);
+    default:
+      return state;
+  }
+}
 
+function App() {
+  const [state, dispatch] = useReducer(appReducer, undefined, initAppState);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  const fetchZenQuotes = useCallback(async () => {
+    if (state.isFetching) return;
+    dispatch({ type: 'FETCH_START' });
+    try {
+      const res = await fetch('https://zenquotes.io/api/quotes/');
+      if (!res.ok) throw new Error('Failed to fetch API');
+
+      const data: { q: string, a: string }[] = await res.json();
+
+      const newQuotes = data.map((item, index) => ({
+        id: `zen-${Date.now()}-${index}`,
+        text: item.q,
+        author: item.a
+      }));
+
+      dispatch({ type: 'FETCH_SUCCESS', payload: newQuotes });
+    } catch (err) {
+      console.warn('Could not fetch external quotes.', err);
+      dispatch({ type: 'FETCH_ERROR' });
+    }
+  }, [state.isFetching]);
+
+  // Proactively fetch more if we're running low on unseen quotes
   useEffect(() => {
-    if (!isAutoMode) return;
-    const interval = setInterval(() => {
-      const container = document.querySelector('.app-container');
-      if (container) {
-        let delayScroll = 0;
-        // If we're at the very bottom (or close to it) and about to scroll down, trigger a load manually
-        // because the intersection observer might be stuck or skipped
-        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
-          loadMoreQuotes();
-          delayScroll = 150; // Give React 150ms to render the newly added quotes to the DOM
-        }
+    const poolLength = state.selectedTheme === 'All'
+      ? state.fetchedQuotes.length
+      : state.localQuotesPool.filter(q => q.theme === state.selectedTheme).length;
 
-        setTimeout(() => {
-          container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
-        }, delayScroll);
-      }
-    }, autoDuration * 1000); // Dynamic duration
-    return () => clearInterval(interval);
-  }, [isAutoMode, autoDuration, loadMoreQuotes]);
+    if (state.selectedTheme === 'All' && poolLength - state.quoteIndex <= 10 && !state.isFetching && state.initialFetchDone) {
+      fetchZenQuotes();
+    }
+  }, [state.quoteIndex, state.fetchedQuotes.length, state.selectedTheme, state.isFetching, state.initialFetchDone, fetchZenQuotes, state.localQuotesPool]);
 
+  // Initial fetch for the first external quotes
   useEffect(() => {
-    // Initial fetch to load the first 50 external quotes right away
     fetchZenQuotes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Initialize the very first batch only once we have a pool to draw from
   useEffect(() => {
-    // Initialize the very first batch only once we have a pool to draw from
-    if (quotes.length === 0) {
-      const pool = selectedTheme === 'All'
-        ? (fetchedQuotes.length > 0 ? fetchedQuotes : (initialFetchDone ? localQuotesPool : []))
-        : localQuotesPool.filter(q => q.theme === selectedTheme);
-
-      if (pool.length > 0) {
-        const initialBatch = pool.slice(0, 5).map(q => {
-          const bgUrl = getRandomBackgroundUrl();
-
-          if (typeof window !== 'undefined') {
-            const img = new window.Image();
-            img.src = bgUrl;
-          }
-
-          return {
-            ...q,
-            backgroundUrl: bgUrl,
-            id: crypto.randomUUID()
-          };
-        });
-        setQuotes(initialBatch);
-        setQuoteIndex(5);
-      }
+    if (state.quotes.length === 0) {
+      dispatch({ type: 'INITIALIZE' });
     }
-  }, [fetchedQuotes, initialFetchDone, localQuotesPool, selectedTheme, quotes.length]);
+  }, [state.quotes.length, state.fetchedQuotes.length, state.initialFetchDone, state.selectedTheme]);
 
-  const observerTarget = useRef<HTMLDivElement>(null);
-
-
-
+  // IntersectionObserver for infinite scrolling
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        // If it intersects, load more. We don't just check [0] because in some browsers/cases multiple entries fire.
         const target = entries.find(entry => entry.isIntersecting);
         if (target) {
-          loadMoreQuotes();
+          dispatch({ type: 'LOAD_MORE' });
         }
       },
-      { rootMargin: '200% 0px', threshold: 0.01 } // Massive root margin to ensure we fetch well in advance
+      { rootMargin: '200% 0px', threshold: 0.01 }
     );
 
     if (observerTarget.current) {
@@ -199,20 +244,38 @@ function App() {
     }
 
     return () => observer.disconnect();
-  }, [loadMoreQuotes]);
+  }, []);
+
+  // Auto-mode logic
+  useEffect(() => {
+    if (!state.isAutoMode) return;
+    const interval = setInterval(() => {
+      const container = document.querySelector('.app-container');
+      if (container) {
+        let delayScroll = 0;
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+          dispatch({ type: 'LOAD_MORE' });
+          delayScroll = 150;
+        }
+
+        setTimeout(() => {
+          container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+        }, delayScroll);
+      }
+    }, state.autoDuration * 1000);
+    return () => clearInterval(interval);
+  }, [state.isAutoMode, state.autoDuration]);
 
   return (
     <main className="app-container">
       <ThemeFilter
-        selectedTheme={selectedTheme}
+        selectedTheme={state.selectedTheme}
         onSelectTheme={(theme) => {
-          setSelectedTheme(theme);
-          setQuotes([]);
-          setQuoteIndex(0);
+          dispatch({ type: 'SET_THEME', payload: theme });
           document.querySelector('.app-container')?.scrollTo(0, 0);
         }}
       />
-      {quotes.map((quote) => (
+      {state.quotes.map((quote) => (
         <section key={quote.id} className="feed-item">
           <QuoteCard quote={quote} />
         </section>
@@ -228,10 +291,10 @@ function App() {
       />
 
       <AutoModeToggle
-        isAutoMode={isAutoMode}
-        duration={autoDuration}
-        onToggle={() => setIsAutoMode(!isAutoMode)}
-        onSelectDuration={setAutoDuration}
+        isAutoMode={state.isAutoMode}
+        duration={state.autoDuration}
+        onToggle={() => dispatch({ type: 'TOGGLE_AUTO_MODE' })}
+        onSelectDuration={(duration) => dispatch({ type: 'SET_AUTO_DURATION', payload: duration })}
       />
     </main>
   );
