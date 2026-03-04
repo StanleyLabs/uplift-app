@@ -140,7 +140,7 @@ function App() {
           loadMoreQuotes();
         }
       },
-      { threshold: 0.1 }
+      { rootMargin: '100% 0px', threshold: 0.1 } // Increased rootMargin to trigger earlier and more reliably
     );
 
     if (observerTarget.current) {
@@ -166,10 +166,10 @@ function App() {
           <QuoteCard quote={quote} />
         </section>
       ))}
-      {/* Invisible anchor element to trigger IntersectionObserver */}
+      {/* Anchor element to trigger IntersectionObserver, moved up slightly by wrapping it or placing it inside a feed-item context if needed, but styling it properly */}
       <div
         ref={observerTarget}
-        style={{ height: '10px', scrollSnapAlign: 'none' }}
+        style={{ height: '50vh', scrollSnapAlign: 'none', pointerEvents: 'none' }} // Taller height to ensure it intersects reliably before reaching the absolute bottom
       />
 
       <AutoModeToggle
