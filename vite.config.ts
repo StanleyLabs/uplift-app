@@ -1,10 +1,10 @@
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import preact from '@preact/preset-vite';
 
 export default defineConfig({
   plugins: [
-    react(),
+    preact(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.png', 'icon-512x512.png', 'icon.svg'],
@@ -62,4 +62,18 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['preact', 'preact/hooks', 'lucide-react']
+        }
+      }
+    }
+  },
+  esbuild: {
+    drop: ['console', 'debugger']
+  }
 });
