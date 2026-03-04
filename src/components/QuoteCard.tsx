@@ -5,6 +5,7 @@ export interface QuoteData {
     text: string;
     author: string;
     backgroundUrl: string;
+    theme?: string;
 }
 
 interface QuoteCardProps {

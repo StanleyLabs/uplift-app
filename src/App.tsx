@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { QuoteCard, type QuoteData } from './components/QuoteCard';
+import { ThemeFilter, THEMES } from './components/ThemeFilter';
 import { QUOTES } from './data/quotes';
 import { BACKGROUNDS } from './data/backgrounds';
 import './index.css';
@@ -11,6 +12,7 @@ function App() {
   });
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [isFetching, setIsFetching] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
 
   const fetchZenQuotes = useCallback(async () => {
     if (isFetching) return;
@@ -44,23 +46,35 @@ function App() {
   useEffect(() => {
     // Initialize the very first batch only once allQuotes has been populated/updated
     if (quotes.length === 0 && allQuotes.length > 0) {
-      const initialBatch = allQuotes.slice(0, 5).map(q => ({
-        ...q,
-        backgroundUrl: BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)],
-        id: crypto.randomUUID()
-      }));
-      setQuotes(initialBatch);
-      setQuoteIndex(5);
+      const filteredPool = selectedTheme === 'All'
+        ? allQuotes
+        : allQuotes.filter(q => q.theme === selectedTheme);
+
+      if (filteredPool.length > 0) {
+        const initialBatch = filteredPool.slice(0, 5).map(q => ({
+          ...q,
+          backgroundUrl: BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)],
+          id: crypto.randomUUID()
+        }));
+        setQuotes(initialBatch);
+        setQuoteIndex(5);
+      }
     }
-  }, [allQuotes, quotes.length]);
+  }, [allQuotes, quotes.length, selectedTheme]);
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const loadMoreQuotes = useCallback(() => {
     if (quotes.length === 0) return; // Wait for initial load
 
+    const filteredPool = selectedTheme === 'All'
+      ? allQuotes
+      : allQuotes.filter(q => q.theme === selectedTheme);
+
+    if (filteredPool.length === 0) return;
+
     // Proactively fetch more if we're running low on unseen quotes (e.g. less than 10 left)
-    if (allQuotes.length - quoteIndex <= 10) {
+    if (selectedTheme === 'All' && filteredPool.length - quoteIndex <= 10) {
       fetchZenQuotes();
     }
 
@@ -69,8 +83,8 @@ function App() {
       let newIndex = quoteIndex;
 
       // Pull strictly from the unseen portion of our quotes pool
-      if (allQuotes.length > quoteIndex) {
-        nextBatch = allQuotes.slice(quoteIndex, quoteIndex + 5);
+      if (filteredPool.length > quoteIndex) {
+        nextBatch = filteredPool.slice(quoteIndex, quoteIndex + 5);
         newIndex += nextBatch.length;
       }
 
@@ -78,7 +92,7 @@ function App() {
       if (nextBatch.length < 5) {
         const remainder = 5 - nextBatch.length;
         // Start recycling from index 0
-        const recycledBatch = allQuotes.slice(0, Math.min(remainder, allQuotes.length));
+        const recycledBatch = filteredPool.slice(0, Math.min(remainder, filteredPool.length));
         nextBatch = [...nextBatch, ...recycledBatch];
         newIndex = recycledBatch.length; // Wrap our index around to the start
       }
@@ -103,7 +117,7 @@ function App() {
 
       return [...prev, ...newQuotes];
     });
-  }, [allQuotes, quoteIndex, quotes.length, fetchZenQuotes]);
+  }, [allQuotes, quoteIndex, quotes.length, fetchZenQuotes, selectedTheme]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -124,6 +138,15 @@ function App() {
 
   return (
     <main className="app-container">
+      <ThemeFilter
+        selectedTheme={selectedTheme}
+        onSelectTheme={(theme) => {
+          setSelectedTheme(theme);
+          setQuotes([]);
+          setQuoteIndex(0);
+          document.querySelector('.app-container')?.scrollTo(0, 0);
+        }}
+      />
       {quotes.map((quote) => (
         <section key={quote.id} className="feed-item">
           <QuoteCard quote={quote} />

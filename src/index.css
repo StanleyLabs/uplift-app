@@ -174,6 +174,103 @@ body {
   animation: fadeInSlideUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+/* Theme Filter Dropdown */
+.theme-dropdown-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  font-family: var(--font-sans);
+}
+
+.theme-dropdown-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(28, 28, 28, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(253, 251, 247, 0.15);
+  color: var(--shoji-white);
+  padding: 0.6rem 1.2rem;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-dropdown-button:hover,
+.theme-dropdown-button.active {
+  background: rgba(253, 251, 247, 0.15);
+  border-color: rgba(253, 251, 247, 0.3);
+}
+
+.theme-dropdown-icon {
+  transition: transform 0.3s ease;
+}
+
+.theme-dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+.theme-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: rgba(28, 28, 28, 0.6);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(253, 251, 247, 0.15);
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 150px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
+
+.theme-dropdown-item {
+  background: transparent;
+  border: none;
+  color: rgba(253, 251, 247, 0.8);
+  padding: 0.6rem 1rem;
+  text-align: right;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-dropdown-item:hover {
+  background: rgba(253, 251, 247, 0.1);
+  color: var(--shoji-white);
+}
+
+.theme-dropdown-item.selected {
+  background: var(--shoji-white);
+  color: var(--sumi-ink);
+  font-weight: 600;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .quote-text {
