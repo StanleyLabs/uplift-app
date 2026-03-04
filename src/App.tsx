@@ -2,6 +2,7 @@ import { useReducer, useEffect, useRef, useCallback } from 'react';
 import { QuoteCard, type QuoteData } from './components/QuoteCard';
 import { ThemeFilter, THEMES } from './components/ThemeFilter';
 import { AutoModeToggle } from './components/AutoModeToggle';
+import { AudioPlayer } from './components/AudioPlayer';
 import { QUOTES } from './data/quotes';
 import { BACKGROUNDS } from './data/backgrounds';
 import './index.css';
@@ -87,13 +88,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'INITIALIZE': {
       if (state.quotes.length > 0) return state;
 
+      // Always grab a fallback pool immediately so the screen isn't blank
       const pool = state.selectedTheme === 'All'
-        ? (state.fetchedQuotes.length > 0 ? state.fetchedQuotes : (state.initialFetchDone ? state.localQuotesPool : []))
+        ? (state.fetchedQuotes.length > 0 ? state.fetchedQuotes : state.localQuotesPool)
         : state.localQuotesPool.filter(q => q.theme === state.selectedTheme);
 
       if (pool.length === 0) return state;
 
-      const initialBatch = pool.slice(0, 5).map(q => {
+      const initialBatch = pool.slice(0, 2).map(q => {
         const bgUrl = getRandomBackgroundUrl();
         if (typeof window !== 'undefined') {
           const img = new window.Image();
@@ -109,15 +111,16 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         quotes: initialBatch,
-        quoteIndex: 5
+        quoteIndex: 2
       };
     }
 
     case 'LOAD_MORE': {
       if (state.quotes.length === 0) return state; // Wait for initial load
 
+      // Use local fallback if network quotes aren't available yet
       const pool = state.selectedTheme === 'All'
-        ? (state.fetchedQuotes.length > 0 ? state.fetchedQuotes : (state.initialFetchDone ? state.localQuotesPool : []))
+        ? (state.fetchedQuotes.length > 0 ? state.fetchedQuotes : state.localQuotesPool)
         : state.localQuotesPool.filter(q => q.theme === state.selectedTheme);
 
       if (pool.length === 0) return state;
@@ -180,15 +183,20 @@ function appReducer(state: AppState, action: AppAction): AppState {
 function App() {
   const [state, dispatch] = useReducer(appReducer, undefined, initAppState);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const fetchFailures = useRef(0);
 
   const fetchZenQuotes = useCallback(async () => {
-    if (state.isFetching) return;
+    if (state.isFetching || fetchFailures.current >= 3) return;
     dispatch({ type: 'FETCH_START' });
     try {
-      const res = await fetch('https://zenquotes.io/api/quotes/');
+      // Use proxy to bypass strict CORS policy on zenquotes.io
+      const targetUrl = 'https://zenquotes.io/api/quotes/';
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
       if (!res.ok) throw new Error('Failed to fetch API');
 
       const data: { q: string, a: string }[] = await res.json();
+
+      if (!Array.isArray(data)) throw new Error('Invalid data format');
 
       const newQuotes = data.map((item, index) => ({
         id: `zen-${Date.now()}-${index}`,
@@ -196,9 +204,11 @@ function App() {
         author: item.a
       }));
 
+      fetchFailures.current = 0; // Reset failures on success
       dispatch({ type: 'FETCH_SUCCESS', payload: newQuotes });
     } catch (err) {
       console.warn('Could not fetch external quotes.', err);
+      fetchFailures.current += 1; // Increment failures to prevent infinite loop
       dispatch({ type: 'FETCH_ERROR' });
     }
   }, [state.isFetching]);
@@ -296,6 +306,8 @@ function App() {
         onToggle={() => dispatch({ type: 'TOGGLE_AUTO_MODE' })}
         onSelectDuration={(duration) => dispatch({ type: 'SET_AUTO_DURATION', payload: duration })}
       />
+
+      <AudioPlayer />
     </main>
   );
 }
