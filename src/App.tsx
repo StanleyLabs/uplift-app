@@ -17,17 +17,6 @@ function App() {
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [autoDuration, setAutoDuration] = useState(30);
 
-  useEffect(() => {
-    if (!isAutoMode) return;
-    const interval = setInterval(() => {
-      const container = document.querySelector('.app-container');
-      if (container) {
-        container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
-      }
-    }, autoDuration * 1000); // Dynamic duration
-    return () => clearInterval(interval);
-  }, [isAutoMode, autoDuration]);
-
   const fetchZenQuotes = useCallback(async () => {
     if (isFetching) return;
     setIsFetching(true);
@@ -50,33 +39,6 @@ function App() {
       setIsFetching(false);
     }
   }, [isFetching]);
-
-  useEffect(() => {
-    // Initial fetch to load the first 50 external quotes right away
-    fetchZenQuotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Initialize the very first batch only once allQuotes has been populated/updated
-    if (quotes.length === 0 && allQuotes.length > 0) {
-      const filteredPool = selectedTheme === 'All'
-        ? allQuotes
-        : allQuotes.filter(q => q.theme === selectedTheme);
-
-      if (filteredPool.length > 0) {
-        const initialBatch = filteredPool.slice(0, 5).map(q => ({
-          ...q,
-          backgroundUrl: BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)],
-          id: crypto.randomUUID()
-        }));
-        setQuotes(initialBatch);
-        setQuoteIndex(5);
-      }
-    }
-  }, [allQuotes, quotes.length, selectedTheme]);
-
-  const observerTarget = useRef<HTMLDivElement>(null);
 
   const loadMoreQuotes = useCallback(() => {
     if (quotes.length === 0) return; // Wait for initial load
@@ -134,13 +96,59 @@ function App() {
   }, [allQuotes, quoteIndex, quotes.length, fetchZenQuotes, selectedTheme]);
 
   useEffect(() => {
+    if (!isAutoMode) return;
+    const interval = setInterval(() => {
+      const container = document.querySelector('.app-container');
+      if (container) {
+        // If we're at the very bottom (or close to it) and about to scroll down, trigger a load manually
+        // because the intersection observer might be stuck or skipped
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 100) {
+          loadMoreQuotes();
+        }
+
+        container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+      }
+    }, autoDuration * 1000); // Dynamic duration
+    return () => clearInterval(interval);
+  }, [isAutoMode, autoDuration, loadMoreQuotes]); useEffect(() => {
+    // Initial fetch to load the first 50 external quotes right away
+    fetchZenQuotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Initialize the very first batch only once allQuotes has been populated/updated
+    if (quotes.length === 0 && allQuotes.length > 0) {
+      const filteredPool = selectedTheme === 'All'
+        ? allQuotes
+        : allQuotes.filter(q => q.theme === selectedTheme);
+
+      if (filteredPool.length > 0) {
+        const initialBatch = filteredPool.slice(0, 5).map(q => ({
+          ...q,
+          backgroundUrl: BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)],
+          id: crypto.randomUUID()
+        }));
+        setQuotes(initialBatch);
+        setQuoteIndex(5);
+      }
+    }
+  }, [allQuotes, quotes.length, selectedTheme]);
+
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting) {
+        // If it intersects, load more. We don't just check [0] because in some browsers/cases multiple entries fire.
+        const target = entries.find(entry => entry.isIntersecting);
+        if (target) {
           loadMoreQuotes();
         }
       },
-      { rootMargin: '100% 0px', threshold: 0.1 } // Increased rootMargin to trigger earlier and more reliably
+      { rootMargin: '200% 0px', threshold: 0.01 } // Massive root margin to ensure we fetch well in advance
     );
 
     if (observerTarget.current) {
@@ -166,10 +174,14 @@ function App() {
           <QuoteCard quote={quote} />
         </section>
       ))}
-      {/* Anchor element to trigger IntersectionObserver, moved up slightly by wrapping it or placing it inside a feed-item context if needed, but styling it properly */}
+      {/* 
+        Anchor element to trigger IntersectionObserver.
+        Given a very small height so it doesn't mess with scroll snapping, 
+        but relying on the massive rootMargin above to trigger it early.
+      */}
       <div
         ref={observerTarget}
-        style={{ height: '50vh', scrollSnapAlign: 'none', pointerEvents: 'none' }} // Taller height to ensure it intersects reliably before reaching the absolute bottom
+        style={{ height: '1px', flexShrink: 0, pointerEvents: 'none' }}
       />
 
       <AutoModeToggle
