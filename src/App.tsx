@@ -1,4 +1,5 @@
 import { useReducer, useEffect, useRef, useCallback } from 'react';
+import { EyeOff } from 'lucide-react';
 import { QuoteCard, type QuoteData } from './components/QuoteCard';
 import { ThemeFilter, THEMES } from './components/ThemeFilter';
 import { AutoModeToggle } from './components/AutoModeToggle';
@@ -34,6 +35,7 @@ type AppState = {
   selectedTheme: string;
   isAutoMode: boolean;
   autoDuration: number;
+  isUiHidden: boolean;
 };
 
 type AppAction =
@@ -43,6 +45,7 @@ type AppAction =
   | { type: 'SET_THEME'; payload: string }
   | { type: 'TOGGLE_AUTO_MODE' }
   | { type: 'SET_AUTO_DURATION'; payload: number }
+  | { type: 'SET_UI_HIDDEN'; payload: boolean }
   | { type: 'INITIALIZE' }
   | { type: 'LOAD_MORE' };
 
@@ -57,6 +60,7 @@ function initAppState(): AppState {
     selectedTheme: THEMES[0],
     isAutoMode: false,
     autoDuration: 30,
+    isUiHidden: false,
   };
 }
 
@@ -84,6 +88,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, isAutoMode: !state.isAutoMode };
     case 'SET_AUTO_DURATION':
       return { ...state, autoDuration: action.payload };
+    case 'SET_UI_HIDDEN':
+      return { ...state, isUiHidden: action.payload };
 
     case 'INITIALIZE': {
       if (state.quotes.length > 0) return state;
@@ -277,7 +283,14 @@ function App() {
   }, [state.isAutoMode, state.autoDuration]);
 
   return (
-    <main className="app-container">
+    <main
+      className={`app-container ${state.isUiHidden ? 'ui-hidden' : ''}`}
+      onClick={() => {
+        if (state.isUiHidden) {
+          dispatch({ type: 'SET_UI_HIDDEN', payload: false });
+        }
+      }}
+    >
       <ThemeFilter
         selectedTheme={state.selectedTheme}
         onSelectTheme={(theme) => {
@@ -308,6 +321,19 @@ function App() {
       />
 
       <AudioPlayer />
+
+      <div className="hide-ui-container">
+        <button
+          className="hide-ui-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            dispatch({ type: 'SET_UI_HIDDEN', payload: true });
+          }}
+          aria-label="Hide UI"
+        >
+          <EyeOff size={20} />
+        </button>
+      </div>
     </main>
   );
 }

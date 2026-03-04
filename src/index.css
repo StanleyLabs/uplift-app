@@ -433,6 +433,55 @@ body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Hide UI Button Component */
+.hide-ui-container {
+  position: fixed;
+  bottom: 2rem;
+  left: 1.5rem;
+  z-index: 50;
+  display: flex;
+  font-family: var(--font-sans);
+}
+
+.hide-ui-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 28, 28, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(253, 251, 247, 0.15);
+  border-radius: 50%;
+  color: var(--shoji-white);
+  padding: 0.6rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hide-ui-btn:hover {
+  background: rgba(253, 251, 247, 0.15);
+}
+
+/* UI Hidden State */
+.ui-hidden .theme-dropdown-container,
+.ui-hidden .auto-mode-container,
+.ui-hidden .audio-player-container,
+.ui-hidden .hide-ui-container {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Base transitions for UI elements */
+.theme-dropdown-container,
+.auto-mode-container,
+.audio-player-container,
+.hide-ui-container,
+.quote-content,
+.quote-overlay {
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .quote-text {
@@ -452,5 +501,10 @@ body {
   .audio-player-container {
     bottom: 2rem;
     right: 0.75rem;
+  }
+
+  .hide-ui-container {
+    bottom: 2rem;
+    left: 0.75rem;
   }
 }
