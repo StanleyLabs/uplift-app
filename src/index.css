@@ -278,12 +278,7 @@ body {
   }
 }
 
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .quote-text {
-    font-size: 1.6rem;
-  }
-}
+/* Mobile responsiveness moved to end of file */
 
 /* Auto Mode Component */
 .auto-mode-container {
@@ -378,4 +373,21 @@ body {
 
 .auto-mode-duration-toggle:hover {
   opacity: 0.8;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .quote-text {
+    font-size: 1.6rem;
+  }
+
+  .theme-dropdown-container {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .auto-mode-container {
+    top: 0.75rem;
+    left: 0.75rem;
+  }
 }
