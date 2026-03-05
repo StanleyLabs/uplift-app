@@ -133,7 +133,7 @@ export const AudioPlayer: React.FC = () => {
                     onClick={togglePlay}
                     aria-label={isPlaying ? "Pause Background Sound" : "Play Background Sound"}
                     title={isPlaying ? "Pause Audio" : "Play Audio"}
-                    style={{ padding: '0.5rem' }}
+                    style={{ padding: '0' }}
                 >
                     {isPlaying && volume > 0 ? <Volume2 size={16} /> : <VolumeX size={16} />}
                 </button>

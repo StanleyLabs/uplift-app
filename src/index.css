@@ -199,7 +199,7 @@ body {
   -webkit-backdrop-filter: blur(15px);
   border: 1px solid rgba(253, 251, 247, 0.15);
   color: var(--shoji-white);
-  padding: 0.82rem 1.25rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 9999px;
   font-size: 0.95rem;
   font-weight: 500;
@@ -300,7 +300,7 @@ body {
   -webkit-backdrop-filter: blur(15px);
   border: 1px solid rgba(253, 251, 247, 0.15);
   border-radius: 9999px;
-  padding: 0.6rem 1.2rem;
+  padding: 0.4rem 1.2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
@@ -313,7 +313,7 @@ body {
   background: transparent;
   border: none;
   color: var(--shoji-white);
-  padding: 0.25rem;
+  padding: 0;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
