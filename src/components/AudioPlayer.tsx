@@ -18,7 +18,7 @@ export const AudioPlayer: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [volume, setVolume] = useState(0); // Start at 0 volume
-    const [previousVolume, setPreviousVolume] = useState(0.5); // Remember volume before mute
+    const [previousVolume, setPreviousVolume] = useState(1); // Remember volume before mute
     const [isMuted, setIsMuted] = useState(true); // Start muted
     const [currentTrack, setCurrentTrack] = useState(AUDIO_FILES[0]);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -79,14 +79,14 @@ export const AudioPlayer: React.FC = () => {
 
         // Mute and pause behavior (if playing, or if it isn't playing but has volume)
         if (isPlaying || volume > 0) {
-            setPreviousVolume(volume > 0 ? volume : 0.5); // Save the volume before muting
+            setPreviousVolume(volume > 0 ? volume : 1); // Save the volume before muting
             setVolume(0); // This drops the slider
             audioRef.current.pause();
             setIsPlaying(false);
             setIsMuted(true);
         } else {
             // Unmute and play behavior
-            const restoreVolume = previousVolume > 0 ? previousVolume : 0.5;
+            const restoreVolume = previousVolume > 0 ? previousVolume : 1;
             setVolume(restoreVolume); // Restore slider to previous value
             setIsMuted(false);
 
