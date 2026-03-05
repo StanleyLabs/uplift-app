@@ -32,7 +32,7 @@
 html,
 body {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   /* We'll handle scrolling in the App container */
   background-color: var(--sumi-ink);
@@ -45,13 +45,13 @@ body {
 
 #root {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
 }
 
 /* Base App Container for Vertical Scroll Snapping */
 .app-container {
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   /* Scroll Snap Core */
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
@@ -73,7 +73,7 @@ body {
 /* Feed Item corresponds to one screen */
 .feed-item {
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   scroll-snap-align: start;
   scroll-snap-stop: always;
   position: relative;

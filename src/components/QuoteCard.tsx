@@ -110,13 +110,13 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
                 bgParallaxRef.current.style.transform = `perspective(1000px) translate3d(${bgX}%, ${bgY}%, 0) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.1)`;
             }
             if (contentRef.current) {
-                // Content moves slightly towards cursor
-                const contentX = currentOffset.x * 3.5; // Reduced from 6 to 3.5
-                const contentY = currentOffset.y * 3.5;
+                // Use fixed pixel displacement so it doesn't scale with the size of the quote content box
+                const contentX = currentOffset.x * 15; // 15px max displacement
+                const contentY = currentOffset.y * 15;
                 const rotX = currentOffset.y * 2.5; // Reduced from 5 to 2.5
                 const rotY = currentOffset.x * -2.5;
 
-                contentRef.current.style.transform = `perspective(1000px) translate3d(${contentX}%, ${contentY}%, 30px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                contentRef.current.style.transform = `perspective(1000px) translate3d(${contentX}px, ${contentY}px, 30px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
             }
 
             requestRef.current = requestAnimationFrame(updateOffset);
