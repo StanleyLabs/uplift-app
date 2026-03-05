@@ -41,19 +41,54 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
             targetOffset.current = { x, y };
         };
 
+        let isOrientationStarted = false;
+
         const handleDeviceOrientation = (e: DeviceOrientationEvent) => {
+            if (!isOrientationStarted) isOrientationStarted = true;
             if (e.gamma !== null && e.beta !== null) {
+                // gamma is left/right (-90 to 90), beta is front/back (-180 to 180)
                 let x = e.gamma / 45;
                 let y = (e.beta - 45) / 45; // Assume resting angle of phone is 45 degrees
+
+                // Clamp values
                 x = Math.max(-1, Math.min(1, x));
                 y = Math.max(-1, Math.min(1, y));
                 targetOffset.current = { x, y };
             }
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('deviceorientation', handleDeviceOrientation as EventListener);
+        const startDeviceOrientation = () => {
+            if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+                // iOS 13+ requires permission
+                (DeviceOrientationEvent as any).requestPermission()
+                    .then((permissionState: string) => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', handleDeviceOrientation as EventListener);
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Non iOS 13+ devices
+                window.addEventListener('deviceorientation', handleDeviceOrientation as EventListener);
+            }
+        };
 
+        // Try to start it immediately (works on Android and older iOS). 
+        // We'll also bind it to a click event on the document for iOS 13+.
+        startDeviceOrientation();
+
+        const handleFirstInteraction = () => {
+            if (!isOrientationStarted) {
+                startDeviceOrientation();
+            }
+            document.removeEventListener('click', handleFirstInteraction);
+            document.removeEventListener('touchstart', handleFirstInteraction);
+        };
+
+        document.addEventListener('click', handleFirstInteraction);
+        document.addEventListener('touchstart', handleFirstInteraction);
+
+        // --- End Parallax Logic --- 
         let currentOffset = { x: 0, y: 0 };
         const updateOffset = () => {
             // Smooth lerp towards target

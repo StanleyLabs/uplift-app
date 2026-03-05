@@ -137,7 +137,7 @@ body {
 
 .quote-content {
   position: relative;
-  z-index: 3;
+  z-index: 4;
   width: 100%;
   max-width: 600px;
   text-align: center;
