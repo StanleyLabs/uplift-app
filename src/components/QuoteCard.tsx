@@ -58,7 +58,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
         };
 
         const startDeviceOrientation = () => {
-            if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+            if (typeof (DeviceOrientationEvent as any) !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
                 // iOS 13+ requires permission
                 (DeviceOrientationEvent as any).requestPermission()
                     .then((permissionState: string) => {
@@ -73,10 +73,6 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
             }
         };
 
-        // Try to start it immediately (works on Android and older iOS). 
-        // We'll also bind it to a click event on the document for iOS 13+.
-        startDeviceOrientation();
-
         const handleFirstInteraction = () => {
             if (!isOrientationStarted) {
                 startDeviceOrientation();
@@ -85,8 +81,14 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
             document.removeEventListener('touchstart', handleFirstInteraction);
         };
 
-        document.addEventListener('click', handleFirstInteraction);
-        document.addEventListener('touchstart', handleFirstInteraction);
+        // If it's iOS 13+, we MUST wait for a user interaction to request permission.
+        // If it's anything else, we can start listening immediately.
+        if (typeof (DeviceOrientationEvent as any) !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+            document.addEventListener('click', handleFirstInteraction);
+            document.addEventListener('touchstart', handleFirstInteraction);
+        } else {
+            startDeviceOrientation();
+        }
 
         // --- End Parallax Logic --- 
         let currentOffset = { x: 0, y: 0 };
