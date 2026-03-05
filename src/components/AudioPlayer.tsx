@@ -149,7 +149,7 @@ export const AudioPlayer: React.FC = () => {
                     aria-label="Volume Control"
                 />
 
-                <div style={{ width: '1px', height: '16px', background: 'rgba(253, 251, 247, 0.15)' }}></div>
+                <div className="audio-separator" style={{ width: '1px', height: '16px', background: 'rgba(253, 251, 247, 0.15)' }}></div>
                 <button
                     className="auto-mode-duration-toggle"
                     onClick={() => setIsOpen(!isOpen)}

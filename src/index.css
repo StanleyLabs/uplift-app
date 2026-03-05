@@ -480,6 +480,12 @@ body {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+
+  .volume-slider,
+  .audio-separator {
+    display: none;
+  }
+
   .quote-text {
     font-size: 1.6rem;
   }
