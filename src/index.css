@@ -92,6 +92,17 @@ body {
   overflow: hidden;
 }
 
+.quote-background-parallax {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  /* Add scale so that when it tilts or translates, we don't see the edges */
+  transform: scale(1.15);
+}
+
 .quote-background {
   position: absolute;
   top: 0;
