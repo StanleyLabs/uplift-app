@@ -11,10 +11,13 @@
   },
   "dependencies": {
     "@preact/preset-vite": "^2.10.3",
+    "@tsparticles/engine": "^3.9.1",
+    "@tsparticles/react": "^3.0.0",
     "lucide-react": "^0.576.0",
     "preact": "^10.28.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "tsparticles": "^3.9.1",
     "vite-plugin-pwa": "^1.2.0"
   },
   "devDependencies": {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ParticlesLayer } from './ParticlesLayer';
 
 export interface QuoteData {
     id: string;
@@ -15,6 +16,7 @@ interface QuoteCardProps {
 export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const bgParallaxRef = useRef<HTMLDivElement>(null);
+    const particlesParallaxRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const targetOffset = useRef({ x: 0, y: 0 });
     const requestRef = useRef<number>(0);
@@ -90,7 +92,9 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
             startDeviceOrientation();
         }
 
-        // --- End Parallax Logic --- 
+        window.addEventListener('mousemove', handleMouseMove);
+
+        // --- Parallax animation loop ---
         let currentOffset = { x: 0, y: 0 };
         const updateOffset = () => {
             // Smooth lerp towards target
@@ -100,14 +104,22 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
             currentOffset.y += dy * 0.03;
 
             if (bgParallaxRef.current) {
-                // Background moves slightly opposite and requires a scale to avoid edge clipping
-                // Adding subtle tilt/rotation
-                const bgX = currentOffset.x * -2.5; // Reduced from -4 to -2.5
+                // Plane 1 (back): Background moves most for depth
+                const bgX = currentOffset.x * -2.5;
                 const bgY = currentOffset.y * -2.5;
-                const rotX = currentOffset.y * 1.5; // Reduced from 3 to 1.5
-                const rotY = currentOffset.x * -1.5; // Reduced from -3 to -1.5
+                const rotX = currentOffset.y * 1.5;
+                const rotY = currentOffset.x * -1.5;
 
                 bgParallaxRef.current.style.transform = `perspective(1000px) translate3d(${bgX}%, ${bgY}%, 0) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.1)`;
+            }
+            if (particlesParallaxRef.current) {
+                // Plane 2 (middle): Particles move at medium rate for parallax depth
+                const px = currentOffset.x * -1.5;
+                const py = currentOffset.y * -1.5;
+                const rotX = currentOffset.y * 1;
+                const rotY = currentOffset.x * -1;
+
+                particlesParallaxRef.current.style.transform = `perspective(1000px) translate3d(${px}%, ${py}%, 0) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
             }
             if (contentRef.current) {
                 // Use fixed pixel displacement so it doesn't scale with the size of the quote content box
@@ -132,7 +144,7 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
 
     return (
         <div className="quote-card">
-            {/* Background Image with Parallax Wrapper */}
+            {/* Plane 1: Background Image with Parallax */}
             <div ref={bgParallaxRef} className="quote-background-parallax">
                 <div
                     className={`quote-background ${isLoaded ? 'loaded' : ''}`}
@@ -140,6 +152,12 @@ export const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
                 />
             </div>
 
+            {/* Plane 2: Connected dots particles (parallax middle layer) */}
+            <div ref={particlesParallaxRef} className="quote-particles-parallax">
+                <ParticlesLayer id={`particles-${quote.id}`} className="quote-particles-canvas" />
+            </div>
+
+            {/* Plane 3: Overlay + Content */}
             <div className="quote-overlay" />
 
             {/* Content */}
