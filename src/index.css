@@ -41,6 +41,9 @@ body {
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent selection of entire screen; only quote/author are selectable */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #root {
@@ -63,6 +66,9 @@ body {
   /* Firefox */
   -ms-overflow-style: none;
   /* IE and Edge */
+  /* Prevent selection of entire screen; only quote/author are selectable */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .app-container::-webkit-scrollbar {
@@ -171,6 +177,10 @@ body {
   margin-bottom: 1.5rem;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   letter-spacing: 0.02em;
+  /* Only quote text is selectable; enable for copy/share on mobile */
+  -webkit-user-select: text;
+  user-select: text;
+  pointer-events: auto;
 }
 
 .quote-author {
@@ -182,6 +192,10 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  /* Only author text is selectable; enable for copy/share on mobile */
+  -webkit-user-select: text;
+  user-select: text;
+  pointer-events: auto;
 }
 
 
