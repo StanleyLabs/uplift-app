@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadFull } from 'tsparticles';
 import type { Container, Engine } from '@tsparticles/engine';
@@ -82,7 +82,7 @@ interface ParticlesLayerProps {
   style?: React.CSSProperties;
 }
 
-export const ParticlesLayer: React.FC<ParticlesLayerProps> = ({
+export const ParticlesLayer: React.FC<ParticlesLayerProps> = memo(({
   id,
   className,
   style,
@@ -112,4 +112,6 @@ export const ParticlesLayer: React.FC<ParticlesLayerProps> = ({
       options={connectedDotsOptions}
     />
   );
-};
+});
+
+ParticlesLayer.displayName = 'ParticlesLayer';
